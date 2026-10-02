@@ -1,0 +1,735 @@
+<!doctype html>
+<html lang="zh-Hant-HK">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>醫護升學地圖｜2028 DSE</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@400;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --night:#0E2A3B; --night2:#123649; --dot:#3C6E8A; --pin:#F2B23A; --pinsoft:rgba(242,178,58,.28);
+  --paper:#F3F6F6; --card:#FFFFFF; --text:#17262E; --muted:#56666E; --line:#D5DEE1;
+  --good:#1D7F5C; --goodbg:#E3F3EC; --mid:#9A6A12; --midbg:#FBF0D9; --gap:#9C3552; --gapbg:#F8E6EC;
+  --info:#2B6C85; --infobg:#E2EFF4; --accent:#1F6F8B; --chip:#EAF0F2;
+  --serif:"LXGW WenKai TC","Kaiti TC","STKaiti","Noto Serif TC",serif;
+  --sans:"Noto Sans TC","PingFang TC","Microsoft JhengHei","Heiti TC",system-ui,sans-serif;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --night:#0A1F2C; --night2:#0E2736; --dot:#2E5A72;
+    --paper:#0F181D; --card:#16222A; --text:#E3ECEF; --muted:#9AAFB7; --line:#2A3A43;
+    --goodbg:#143329; --good:#5CC79C; --midbg:#3A2E14; --mid:#E9B95A; --gapbg:#3A1A25; --gap:#E58AA5;
+    --infobg:#13303C; --info:#7CC0D8; --accent:#6FC0DA; --chip:#1E2E37;
+  }
+}
+:root[data-theme="dark"]{
+  --night:#0A1F2C; --night2:#0E2736; --dot:#2E5A72;
+  --paper:#0F181D; --card:#16222A; --text:#E3ECEF; --muted:#9AAFB7; --line:#2A3A43;
+  --goodbg:#143329; --good:#5CC79C; --midbg:#3A2E14; --mid:#E9B95A; --gapbg:#3A1A25; --gap:#E58AA5;
+  --infobg:#13303C; --info:#7CC0D8; --accent:#6FC0DA; --chip:#1E2E37;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:calc(env(safe-area-inset-top,0px) + 64px)}
+body{margin:0;background:var(--paper);color:var(--text);font-family:var(--sans);font-size:16px;line-height:1.65;-webkit-text-size-adjust:100%}
+a{color:var(--accent)}
+button,select,input{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--pin);outline-offset:2px}
+.wrap{max-width:1080px;margin:0 auto;padding:0 18px}
+
+/* hero map */
+.hero{background:var(--night);color:#EAF2F5;padding:22px 0 6px}
+.hero h1{font-family:var(--serif);font-weight:700;font-size:clamp(30px,6vw,46px);line-height:1.15;margin:0;letter-spacing:.02em}
+.hero .sub{margin:6px 0 0;color:#B9CDD6;font-size:15px;max-width:60ch}
+.mapbox{position:relative;margin-top:10px}
+#map{width:100%;height:auto;max-height:400px;display:block}
+#map .d{fill:var(--dot)}
+.pin{cursor:pointer}
+.pin .halo{fill:transparent;transition:fill .3s}
+.pin.lit .halo{fill:var(--pinsoft)}
+.pin .core{fill:#5E8BA3;stroke:#0E2A3B;stroke-width:3;transition:fill .3s}
+.pin.lit .core{fill:var(--pin)}
+.pin.sel .core{stroke:#fff;stroke-width:5}
+.pin text{font-family:var(--sans);fill:#EAF2F5;font-size:42px;font-weight:700;paint-order:stroke;stroke:#0E2A3B;stroke-width:9px}
+.pin .cnt{font-size:34px;font-weight:500}
+.pin.lit .cnt{fill:#FFE3A8}
+@keyframes pulse{0%{r:34}60%{r:60}100%{r:38}}
+.pin.lit.pulse .halo{animation:pulse 1.1s ease-out 1}
+@media (prefers-reduced-motion:reduce){.pin.lit.pulse .halo{animation:none}}
+.maplegend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px;color:#B9CDD6;padding:4px 0 10px}
+
+/* tabs */
+.tabs{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--night2);border-bottom:1px solid rgba(255,255,255,.08)}
+.tabs .wrap{display:flex;gap:4px;overflow-x:auto}
+.tab{background:none;border:0;color:#B9CDD6;padding:12px 14px;font-size:15px;font-weight:500;border-bottom:3px solid transparent;white-space:nowrap;cursor:pointer}
+.tab[aria-selected="true"]{color:#fff;border-bottom-color:var(--pin)}
+.panel{display:none;padding:22px 0 40px}
+.panel.on{display:block}
+h2{font-family:var(--serif);font-size:26px;line-height:1.25;margin:0 0 6px}
+h3{font-size:18px;margin:22px 0 8px}
+.lead{color:var(--muted);margin:0 0 16px;max-width:68ch}
+
+/* grades */
+.grades{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px}
+.ggrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px 14px}
+.g label{display:block;font-size:13px;color:var(--muted);margin-bottom:3px}
+.g select,.g input[type=text],.num{width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:8px;background:var(--paper)}
+.g.req label::after{content:"＊";color:var(--gap)}
+.csd{display:flex;align-items:center;gap:8px;padding-top:22px;font-size:14px}
+.csd input{width:20px;height:20px}
+.score{display:flex;flex-wrap:wrap;gap:10px 24px;align-items:baseline;margin-top:14px;padding-top:12px;border-top:1px dashed var(--line)}
+.score b{font-family:var(--serif);font-size:30px;line-height:1}
+.score span{color:var(--muted);font-size:14px}
+.btnrow{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.btn{border:1px solid var(--line);background:var(--paper);padding:7px 12px;border-radius:999px;cursor:pointer;font-size:14px}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+
+/* filters */
+.filters{display:flex;flex-wrap:wrap;gap:6px;margin:18px 0 6px}
+.chipbtn{border:1px solid var(--line);background:var(--card);padding:6px 12px;border-radius:999px;cursor:pointer;font-size:14px}
+.chipbtn[aria-pressed="true"]{background:var(--text);color:var(--paper);border-color:var(--text)}
+.filters .lbl{font-size:13px;color:var(--muted);align-self:center;margin-right:4px}
+
+/* fields */
+.field{background:var(--card);border:1px solid var(--line);border-radius:12px;margin:10px 0;overflow:hidden}
+.field>summary{list-style:none;cursor:pointer;padding:14px 16px;display:grid;grid-template-columns:1fr auto;gap:4px 12px;align-items:center}
+.field>summary::-webkit-details-marker{display:none}
+.fname{font-family:var(--serif);font-size:21px;font-weight:700}
+.fdesc{grid-column:1/-1;color:var(--muted);font-size:14px;margin-top:-2px}
+.fcounts{display:flex;flex-wrap:wrap;gap:6px;grid-column:1/-1}
+.cc{font-size:13px;background:var(--chip);padding:2px 9px;border-radius:999px}
+.cc.lit{background:var(--midbg);color:var(--mid);font-weight:700}
+.cc.best{background:var(--goodbg);color:var(--good);font-weight:700}
+.chev{font-size:13px;color:var(--muted)}
+.field[open] .chev::before{content:"收起"}
+.field:not([open]) .chev::before{content:"展開學校"}
+.fbody{padding:0 16px 16px;border-top:1px solid var(--line)}
+.hknote{background:var(--infobg);color:var(--text);border-radius:8px;padding:10px 12px;font-size:14px;margin:12px 0}
+.hknote b{color:var(--info)}
+.cgroup h4{margin:16px 0 6px;font-size:15px;color:var(--muted);font-weight:500}
+
+.prog{border-left:5px solid var(--line);background:var(--paper);border-radius:4px 10px 10px 4px;padding:12px 14px;margin:8px 0}
+.prog.comp{border-left-color:var(--good)}
+.prog.min{border-left-color:var(--mid)}
+.prog.gap{border-left-color:var(--gap)}
+.prog.info{border-left-color:var(--info);border-left-style:dashed}
+.ptop{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.psch{font-weight:700}
+.pprog{font-size:15px}
+.badge{font-size:12px;font-weight:700;padding:3px 9px;border-radius:999px;white-space:nowrap}
+.badge.comp{background:var(--goodbg);color:var(--good)}
+.badge.min{background:var(--midbg);color:var(--mid)}
+.badge.gap{background:var(--gapbg);color:var(--gap)}
+.badge.none{background:var(--chip);color:var(--muted)}
+.badge.info{background:var(--infobg);color:var(--info)}
+.pmeta{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:13px;color:var(--muted);margin:4px 0 6px}
+.preq{font-size:14px;margin:4px 0}
+.pgaps{margin:6px 0;padding:8px 10px 8px 26px;background:var(--card);border-radius:8px;font-size:14px}
+.pgaps li{margin:2px 0}
+.pgaps.toc{color:var(--mid)} .pgaps.miss{color:var(--gap)}
+.hurd{display:flex;flex-wrap:wrap;gap:5px;margin:6px 0}
+.hurd span{font-size:12.5px;background:var(--card);border:1px solid var(--line);padding:2px 8px;border-radius:6px}
+.pfoot{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;font-size:13.5px;margin-top:6px}
+.src{font-size:12px;padding:1px 7px;border-radius:4px;border:1px solid var(--line);color:var(--muted)}
+.src.official{border-color:var(--good);color:var(--good)}
+.src.third{border-color:var(--mid);color:var(--mid)}
+.reglist{font-size:13px}
+.reglist.yes{color:var(--good)} .reglist.no{color:var(--gap)}
+.empty{padding:14px;color:var(--muted);font-size:14px}
+
+/* tab2 */
+.timeline{list-style:none;margin:0;padding:0;counter-reset:t}
+.timeline li{position:relative;padding:0 0 16px 46px;counter-increment:t}
+.timeline li::before{content:counter(t);position:absolute;left:0;top:0;width:32px;height:32px;border-radius:50%;background:var(--night);color:#fff;font-weight:700;display:grid;place-items:center;font-size:14px}
+.timeline li::after{content:"";position:absolute;left:15px;top:34px;bottom:2px;width:2px;background:var(--line)}
+.timeline li:last-child::after{display:none}
+.timeline .when{font-weight:700}
+.cgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.ccard{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.ccard h4{font-family:var(--serif);font-size:20px;margin:0 0 6px}
+.ccard ul{margin:0;padding-left:20px;font-size:14.5px}
+.ccard li{margin:4px 0}
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--card)}
+table{border-collapse:collapse;width:100%;min-width:640px;font-size:14px}
+th,td{text-align:left;vertical-align:top;padding:10px 12px;border-bottom:1px solid var(--line)}
+th{background:var(--chip);font-weight:700}
+tr:last-child td{border-bottom:0}
+.callout{border:1px solid var(--line);border-left:5px solid var(--pin);background:var(--card);border-radius:4px 12px 12px 4px;padding:12px 14px;margin:14px 0;font-size:14.5px}
+.sources{font-size:13.5px;columns:2 300px;column-gap:28px;padding-left:18px}
+.sources li{break-inside:avoid;margin:3px 0}
+
+/* tab3 */
+.settings{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px 14px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.settings label{font-size:13px;color:var(--muted);display:block;margin-bottom:3px}
+.toggle{display:flex;gap:8px;align-items:center;font-size:14px;padding-top:22px}
+.toggle input{width:20px;height:20px}
+.bars{margin-top:10px}
+.bar{display:grid;grid-template-columns:minmax(120px,38%) 1fr;gap:10px;align-items:center;padding:5px 0;font-size:13.5px}
+.bar .bl{line-height:1.3}
+.bar .bl small{color:var(--muted);display:block}
+.bar .track{position:relative;height:24px;background:var(--chip);border-radius:6px;overflow:hidden}
+.bar .fill{position:absolute;inset:0 auto 0 0;border-radius:6px}
+.bar .val{position:absolute;right:8px;top:2px;font-size:12.5px;font-weight:700;color:var(--text)}
+.f-HK{background:#7FB8A5}.f-UK{background:#7C9CC9}.f-CA{background:#D69A86}.f-AU{background:#D8B86A}
+:root[data-theme="dark"] .bar .val{color:#fff}
+.legendrow{display:flex;flex-wrap:wrap;gap:12px;font-size:13px;color:var(--muted);margin:6px 0}
+.legendrow i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+.weights{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:8px 18px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.weights label{display:flex;justify-content:space-between;font-size:14px}
+.weights input[type=range]{width:100%;accent-color:var(--accent)}
+.res{margin-top:12px}
+.resrow{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:8px 0}
+.resrow .top{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.resrow .nm{font-family:var(--serif);font-size:20px;font-weight:700}
+.resrow .sc{font-size:22px;font-weight:700}
+.resrow .rtrack{height:10px;background:var(--chip);border-radius:6px;margin:6px 0 8px;overflow:hidden}
+.resrow .rfill{height:100%;background:var(--accent);border-radius:6px}
+.resrow .why{font-size:14px;color:var(--muted);margin:0}
+.fgrid{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.fgrid span{font-size:12.5px;background:var(--chip);padding:2px 8px;border-radius:6px}
+.foot{color:var(--muted);font-size:13px;border-top:1px solid var(--line);padding:18px 0 30px;margin-top:10px}
+@media (max-width:560px){
+  .ggrid{grid-template-columns:repeat(2,1fr)}
+  .bar{grid-template-columns:1fr}
+  .hero .sub{font-size:14px}
+}
+@media print{.tabs,.btnrow,.filters,.hero .mapbox{display:none}.panel{display:block!important}.field{break-inside:avoid}}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <h1>醫護升學地圖</h1>
+    <p class="sub">2028 年 DSE｜香港、英國、加拿大、澳洲。輸入成績（可先用校內或預測成績），看看哪些醫護課程已達要求、還差多少。</p>
+    <div class="mapbox">
+      <svg id="map" viewBox="330 30 1430 590" role="img" aria-label="世界地圖，標示香港、英國、加拿大、澳洲，可點選篩選國家"></svg>
+    </div>
+    <div class="maplegend" id="maplegend"></div>
+  </div>
+</header>
+
+<nav class="tabs" aria-label="分頁">
+  <div class="wrap" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" aria-controls="p1" id="t1">選科配對</button>
+    <button class="tab" role="tab" aria-selected="false" aria-controls="p2" id="t2">路線與返港認可</button>
+    <button class="tab" role="tab" aria-selected="false" aria-controls="p3" id="t3">費用與比較</button>
+  </div>
+</nav>
+
+<main>
+<!-- TAB 1 -->
+<section class="panel on" id="p1" role="tabpanel" aria-labelledby="t1">
+  <div class="wrap">
+    <h2>輸入成績</h2>
+    <p class="lead">打 ＊ 的科目是大部分醫護課程會看的。未考 DSE 前，可以先填校內成績或老師的預測，再改改看哪一科升一級會打開更多選擇。</p>
+    <div class="grades">
+      <div class="ggrid" id="ggrid"></div>
+      <div class="score" id="score"></div>
+      <div class="btnrow">
+        <button class="btn" id="clearBtn" type="button">清除成績</button>
+        <button class="btn" id="demoBtn" type="button">填入示範成績</button>
+        <button class="btn" id="printBtn" type="button">列印／存成 PDF</button>
+      </div>
+    </div>
+
+    <div class="filters" id="cfilter" aria-label="國家篩選"></div>
+    <div class="filters" id="sfilter" aria-label="狀態篩選"></div>
+    <p class="lead" style="font-size:14px;margin:4px 0 8px"><b style="color:var(--good)">有競爭力</b>：按往年錄取水平有機會。<b style="color:var(--mid)">達最低要求</b>：可以報名，但大部分錄取者分數更高，會列出要再升多少。<b style="color:var(--gap)">未達</b>：未到門檻，會列出差多少。醫科、牙醫、獸醫即使分數夠，仍要過入學試和面試。</p>
+
+    <div id="fields"></div>
+  </div>
+</section>
+
+<!-- TAB 2 -->
+<section class="panel" id="p2" role="tabpanel" aria-labelledby="t2">
+  <div class="wrap">
+    <h2>由中五到入學：時間表（2028 年 DSE）</h2>
+    <p class="lead">英國醫科、牙醫、獸醫要在 DSE 之前用預測成績申請；香港、加拿大、澳洲大多可以等放榜或用預測成績先申請。</p>
+    <ol class="timeline">
+      <li><span class="when">2026–27 中五：</span>確定方向；開始累積醫護或動物相關經驗（獸醫一般要 70 小時以上）；保持校內成績，學校會用來寫預測成績。</li>
+      <li><span class="when">2027 年 7–9 月（升中六暑假）：</span>英國醫科、牙醫要考 UCAT（2026 年考期為 7 月 13 日至 9 月 24 日，2027 年待公佈，香港有試場）。澳洲醫科可考 ISAT（成績兩年有效）。準備 IELTS。</li>
+      <li><span class="when">2027 年 9 月至 10 月中：</span>UCAS 收表。醫科、牙醫、獸醫以往在 10 月 15 日截止；UCAS 曾就改革截止日諮詢，2028 年入學日期要再確認。</li>
+      <li><span class="when">2027 年 12 月：</span>JUPAS 申請截止（上屆在 12 月初）。內地文憑試收生計劃亦在 12 月報名。</li>
+      <li><span class="when">2028 年 1 月：</span>UCAS 其他課程截止（2027 年入學為 1 月 13 日）；加拿大安省大學一般在 1 月中左右截止（請核實）。</li>
+      <li><span class="when">2028 年 3–4 月：</span>DSE 考試。</li>
+      <li><span class="when">2028 年 6 月：</span>Monash 醫科國際生申請約 6 月底截止（往年做法，早於放榜）。</li>
+      <li><span class="when">2028 年 7 月中：</span>DSE 放榜；JUPAS 改選；英國和加拿大確認 offer；澳洲大部分課程可用真實成績申請 2029 年 2 月入學。</li>
+      <li><span class="when">2028 年 9 月／2029 年 2 月：</span>英國、加拿大、香港 9 月開學；澳洲翌年 2–3 月開學。</li>
+    </ol>
+
+    <h2 style="margin-top:28px">四個地方的關卡</h2>
+    <div class="cgrid">
+      <div class="ccard"><h4>🇭🇰 香港（留港）</h4><ul>
+        <li>成本最低，可住家；本地學位返港執業最直接。</li>
+        <li>醫科每間約 300 個學額、城大獸醫約 30 個本地學額，競爭最大。</li>
+        <li>SSSDP 資助自資學位：2026/27 年共資助 4,781 個學位，包括東華學院護理 400 個、職業治療 60 個、醫學影像 30 個、放射治療 20 個，以及都會大學的護理、物理治療、放射診斷。</li>
+        <li>JUPAS 一次過可填多個志願，宜同時填資助與 SSSDP 課程。</li>
+      </ul></div>
+      <div class="ccard"><h4>🇬🇧 英國</h4><ul>
+        <li>直接收 DSE；物治、護理、職治多數 3 年（蘇格蘭 4 年）。</li>
+        <li>醫科國際生名額只佔約 7.5%，每間約 10–74 個，並要考 UCAT 和面試。</li>
+        <li>簽證生活費證明：2026 年 11 月 30 日起倫敦每月 £1,570、倫敦以外 £1,203（計 9 個月）。</li>
+        <li>畢業工作簽證：2027 年 1 月 1 日起申請者縮短至 18 個月。</li>
+        <li>護理、職治、放射等英文要求一般 IELTS 7.0（各項 6.5）；言語治療要 IELTS 8.0（各項 7.5）。</li>
+        <li>BN(O)：由香港直接申請仍屬國際生。英格蘭要先取得定居身份（BN(O) 簽證約 5 年）並住滿 3 年才有本地學費；蘇格蘭住滿 3 年。</li>
+      </ul></div>
+      <div class="ccard"><h4>🇨🇦 加拿大</h4><ul>
+        <li>護理可以直接讀（McMaster、Western、George Brown／TMU 等）。</li>
+        <li>醫科、牙醫、獸醫、藥劑、物治、職治、言語治療多數要先讀本科，再讀專業學位，總年期 6–8 年。</li>
+        <li>安省醫學院由 2026 年起實際上不收國際生；省外名額極少。</li>
+        <li>學習許可生活費證明：2026 年 9 月 1 日起 CAD 23,448／年；大部分本科要省提名信（PAL）。</li>
+        <li>家人照應：哥哥在 GTA，只有讀 GTA 的學校（U of T、TMU、York、George Brown）可以同住；McMaster、Western、Queen's、Guelph 仍要住校。</li>
+      </ul></div>
+      <div class="ccard"><h4>🇦🇺 澳洲</h4><ul>
+        <li>直接收 DSE，2 月開學，放榜後有時間用真實成績申請。</li>
+        <li>醫科要 ISAT 或 UCAT ANZ 加面試，學費約 AUD 95,000–100,000／年。</li>
+        <li>學生簽證生活費證明 AUD 29,710／年；簽證費 2026 年 7 月起 AUD 2,500。</li>
+        <li>2027 年國際生規劃上限維持 295,000 人。</li>
+        <li>物治、職治、護理一般 4 年或 3 年，IELTS 7.0。</li>
+      </ul></div>
+    </div>
+
+    <h2 style="margin-top:28px">返港執業要求</h2>
+    <p class="lead">同一個學位，在香港讀和在外國讀，返港註冊的難度可以差很遠。這是選地方時最重要的一項。</p>
+    <div class="tbl"><table>
+      <thead><tr><th>職業</th><th>香港讀</th><th>外國讀</th></tr></thead>
+      <tbody id="hktable"></tbody>
+    </table></div>
+
+    <div class="callout"><b>醫科特別注意：</b>香港醫委會「認可醫學資格名單」（2026 年 6 月更新）列出英國、澳洲、加拿大、美國、新加坡等地的醫學院。名單上的學校畢業、又是香港永久居民，可經公營機構工作和專科培訓註冊；不在名單上就要考執業試。第一個分頁每個醫科課程都標明是否在名單上。</div>
+
+    <h3>主要資料來源</h3>
+    <ul class="sources">
+      <li><a href="https://www.mchk.org.hk/english/registration/recognised_medical_qualifications.html" target="_blank" rel="noopener">香港醫委會：認可醫學資格名單</a></li>
+      <li><a href="https://www.info.gov.hk/gia/general/202603/12/P2026031200248.htm" target="_blank" rel="noopener">藥劑業及毒藥管理局：註冊考試結果（2026 年 3 月）</a></li>
+      <li><a href="https://smp-council.org.hk/smp/en/intro.php" target="_blank" rel="noopener">輔助醫療業管理局（五個管理委員會）</a></li>
+      <li><a href="https://www.info.gov.hk/gia/general/202504/02/P2025040200456.htm" target="_blank" rel="noopener">立法會答問：非本地物治／職治註冊時間</a></li>
+      <li><a href="https://www.cspe.edu.hk/sssdp/" target="_blank" rel="noopener">SSSDP 指定專業／界別課程資助計劃</a></li>
+      <li><a href="https://www.cityu.edu.hk/admo/taxonomy/term/567" target="_blank" rel="noopener">城大獸醫學士入學資料</a></li>
+      <li><a href="https://www.ed.ac.uk/studying/international/country/asia/east-asia/hong-kong" target="_blank" rel="noopener">University of Edinburgh：香港 DSE 要求</a></li>
+      <li><a href="https://www.rvc.ac.uk" target="_blank" rel="noopener">Royal Veterinary College</a></li>
+      <li><a href="https://nextgenmedprep.com/medical-schools/international-students" target="_blank" rel="noopener">英國醫學院國際生名額及 UCAT 整理（第三方）</a></li>
+      <li><a href="https://www.gov.uk/student-visa/money" target="_blank" rel="noopener">GOV.UK：學生簽證資金要求</a></li>
+      <li><a href="https://www.queensu.ca/admission/applying/admission-requirements/hkdse" target="_blank" rel="noopener">Queen's University：HKDSE 要求</a></li>
+      <li><a href="https://mcgill.ca/undergraduate-admissions/node/690" target="_blank" rel="noopener">McGill：HKDSE 要求</a></li>
+      <li><a href="https://www.uoguelph.ca/ovc/dvm-program-application" target="_blank" rel="noopener">Ontario Veterinary College：DVM 申請</a></li>
+      <li><a href="https://www.monash.edu/medicine/som/direct-entry/international/entry-requirements" target="_blank" rel="noopener">Monash 醫科國際生要求</a></li>
+      <li><a href="https://www.unsw.edu.au/medicine-health/study-with-us/undergraduate/applying-to-medicine/international-applicants" target="_blank" rel="noopener">UNSW 醫科國際生</a></li>
+      <li><a href="https://immi.homeaffairs.gov.au/visas/getting-a-visa/visa-listing/student-500" target="_blank" rel="noopener">澳洲內政部：學生簽證</a></li>
+    </ul>
+  </div>
+</section>
+
+<!-- TAB 3 -->
+<section class="panel" id="p3" role="tabpanel" aria-labelledby="t3">
+  <div class="wrap">
+    <h2>讀到可以執業，總共要多少錢？</h2>
+    <p class="lead">以「學費＋生活費 × 年期」計，換成港幣。學費多數是估算，生活費以中位數估算（不含機票、保險、簽證）。匯率可以自己改。</p>
+    <div class="settings">
+      <div><label for="fxGBP">1 英鎊 = 港幣</label><input class="num" id="fxGBP" type="number" step="0.01"></div>
+      <div><label for="fxCAD">1 加元 = 港幣</label><input class="num" id="fxCAD" type="number" step="0.01"></div>
+      <div><label for="fxAUD">1 澳元 = 港幣</label><input class="num" id="fxAUD" type="number" step="0.01"></div>
+      <div class="toggle"><input type="checkbox" id="bro"><label for="bro" style="margin:0;color:var(--text)">在多倫多與哥哥同住</label></div>
+      <div><label for="broCost">同住時每年生活費（加元）</label><input class="num" id="broCost" type="number" step="500"></div>
+      <div><label for="costField">比較哪一科</label><select class="num" id="costField"></select></div>
+    </div>
+    <div class="legendrow"><span><i class="f-HK"></i>香港</span><span><i class="f-UK"></i>英國</span><span><i class="f-CA"></i>加拿大</span><span><i class="f-AU"></i>澳洲</span></div>
+    <h3>每個課程的總成本（港幣）</h3>
+    <div class="bars" id="costBars"></div>
+    <h3>各地平均每年成本（港幣）</h3>
+    <div class="bars" id="avgBars"></div>
+    <p class="lead" style="margin-top:8px">生活費假設：香港住家 HK$40,000；倫敦 £18,500；英國其他城市 £14,500；多倫多 CAD 26,000；安省其他城市 CAD 21,000；悉尼 AUD 34,000；墨爾本 AUD 33,000；其他澳洲城市 AUD 27,000–30,000（每年）。簽證最低要求見第二個分頁。</p>
+
+    <h2 style="margin-top:30px">四條路，按你們重視的東西排名</h2>
+    <p class="lead">先揀職業類別，再拉每一項有多重要（0 = 不在乎，5 = 最重要）。分數是按研究整理的 1–5 分，每條路的理由寫在下面。</p>
+    <div class="settings" style="margin-bottom:10px">
+      <div><label for="grp">職業類別</label><select class="num" id="grp">
+        <option value="doc">醫生、牙醫、藥劑師</option>
+        <option value="allied" selected>護理、物治、職治、言語、放射、化驗、視光</option>
+        <option value="vet">獸醫</option>
+      </select></div>
+    </div>
+    <div class="weights" id="weights"></div>
+    <div class="res" id="results"></div>
+  </div>
+</section>
+</main>
+
+<footer class="wrap foot">
+  資料整理於 2026 年 10 月。入學要求每年更新；標示「估算」的分數和學費是按公開資料推算，標示「第三方」的是升學機構或網站整理，報名前請以學校官網為準。成績會儲存在這部裝置的瀏覽器內，不會上傳。
+</footer>
+
+<script>
+(function(){
+'use strict';
+const MASK='w.2.1.1.2.3.3.1.b.1.3.k.14.3.d.2.1.8.c.1.k|s.4.a.2.i.h.12.2.f.a.g.1.j|r.3.1.7.2.2.3.8.9.h.11.2.6.2.1.3.1.n.6.5.f|9.8.1.1.5.1.1.1.4.9.2.2.4.1.1.6.7.1.1.e.k.1.1.4.e.1.3.3.1.17.5.1.4|0.2.5.p.4.2.3.5.1.2.2.1.2.4.5.b.m.1.1.c.2.1.2.1t|1.4.2.15.5.3.2.1.4.9.8.3.d.b.3.1y|a.z.2.1.1.1.4.4.6.6.9.3.d.5.2.6.1.1y.1|7.10.8.3.b.4.o.6.2.25.2|6.1.1.8.3.o.8.4.2.1.z.6.6.1q.4.2.7|b.1.a.m.7.8.r.2.8.2.4.1m.9.2.9|a.1.c.n.6.7.z.1.1.1.4.1m.9.3.9|n.1.1.o.1.b.o.2.2.1.4.1s.1.1.8.2.a|q.n.2.b.n.1.1.4.1.1y.6.1.b|q.1.1.t.4.1.t.1x.1.1.i|s.t.3.4.o.20.k|s.u.1.1.t.g.4.5.3.16.l|s.r.2.1.v.5.1.1.2.6.6.4.1.17.3.2.h|s.r.v.6.2.1.1.1.3.4.3.1.3.3.2.13.p|s.p.x.4.4.1.5.1.2.c.1.y.1.3.6.1.j|t.n.y.4.6.2.3.1.2.a.3.w.4.1.q|t.n.12.5.d.16.3.2.3.2.k|v.k.10.8.d.16.6.1.n|w.i.z.d.2.2.5.18.4.1.o|w.1.1.b.2.2.10.t.1.10.t|x.8.8.1.y.n.1.6.2.y.u|z.6.8.1.x.o.1.7.4.v.u|10.5.15.q.1.a.5.p.1.1.t|11.4.9.1.v.q.2.a.5.a.1.a.y|11.5.3.1.5.2.t.r.1.9.7.7.4.6.11|13.7.5.1.4.1.p.r.2.7.9.5.5.6.7.1.t|15.1.1.3.10.s.1.5.b.4.6.1.1.5.6.1.t|18.4.b.1.m.t.1.2.d.3.9.6.5.2.s|1b.1.y.u.g.2.6.1.2.1.1.4.7.1.r|1g.7.o.w.d.2.9.1.b.1.s|1d.1.1.9.o.v.f.1.8.1.8.1.2.2.r|1f.a.o.6.1.m.q.1.7.1.1.1.1.1.r|1f.d.v.j.o.1.1.2.5.2.v|1f.e.u.i.q.3.4.3.v|1e.e.v.g.t.2.3.4.v|1e.i.r.f.u.2.3.3.2.1.5.1.2.1.3.1.g|1d.m.p.e.v.2.4.1.8.6.i|1d.n.o.d.1e.7.1.1.c|1e.n.o.d.z.2.c.3.1.1.4.2.a|1f.l.p.d.1i.2.e|1f.k.q.d.1a.1.4.1.i|1g.i.q.e.4.1.12.1.1.3.3.1.i|1h.i.p.e.3.2.11.7.2.2.h|1j.f.q.c.4.3.10.c.h|1j.f.r.a.5.2.10.e.g|1j.f.r.b.4.2.x.i.f|1j.c.u.b.4.2.x.j.e|1j.b.v.9.15.k.d|1i.c.w.8.15.k.d|1i.b.y.6.16.k.d|1i.a.z.6.17.6.2.a.e|1i.9.10.3.19.3.9.7.e|1i.7.2p.1.1.5.f|1h.8.2r.2.1.1.d.2.1|1h.6.3d|1i.3.2y.1.c.1.3|1h.4.39.2.4|1g.4.39.2.5|1g.5.3f|1h.3.3g|1g.1.1.2.4.1.3b|1j.1.3g|50';
+const G={'5**':7,'5*':6,'5':5,'4':4,'3':3,'2':2,'1':1,'U':0};
+const GN={7:'5**',6:'5*',5:'5',4:'4',3:'3',2:'2',1:'1',0:'U'};
+const SUBJ=[
+  {k:'chi',n:'中文',req:1},{k:'eng',n:'英文',req:1},{k:'math',n:'數學（必修）',req:1},
+  {k:'bio',n:'生物',req:1},{k:'chem',n:'化學',req:1},{k:'el3',n:'第三科選修',req:0},{k:'m12',n:'數學延伸 M1/M2',req:0}
+];
+const SN={chi:'中文',eng:'英文',math:'數學',bio:'生物',chem:'化學',el3:'第三科選修',m12:'M1/M2'};
+const C={
+  HK:{n:'香港',f:'🇭🇰',x:1471,y:274,a:'end'},
+  UK:{n:'英國',f:'🇬🇧',x:900,y:128,a:'start'},
+  CA:{n:'加拿大',f:'🇨🇦',x:503,y:167,a:'start'},
+  AU:{n:'澳洲',f:'🇦🇺',x:1640,y:540,a:'end'}
+};
+const CORDER=['HK','UK','CA','AU'];
+const LIVE={HKH:['HKD',40000],LON:['GBP',18500],UKO:['GBP',14500],TOR:['CAD',26000],ONT:['CAD',21000],MTL:['CAD',22000],SYD:['AUD',34000],MEL:['AUD',33000],BNE:['AUD',30000],ADL:['AUD',28000],PER:['AUD',28000],NCL:['AUD',27000]};
+const CURSYM={HKD:'HK$',GBP:'£',CAD:'CAD ',AUD:'AUD '};
+
+const FIELDS=[
+ {k:'med',n:'醫科',d:'內外全科醫生。海外競爭最大，亦最講究返港認可。',g:'doc'},
+ {k:'dent',n:'牙醫',d:'牙科醫生。英澳國際生名額少，要考 UCAT。',g:'doc'},
+ {k:'pharm',n:'藥劑',d:'藥劑師。外地畢業返港要考三科註冊試，合格率低。',g:'doc'},
+ {k:'nurse',n:'護理',d:'註冊護士。學額最多，香港有大量資助學位。',g:'allied'},
+ {k:'pt',n:'物理治療',d:'運動及骨科康復、復健。',g:'allied'},
+ {k:'ot',n:'職業治療',d:'協助病人恢復日常生活和工作能力。',g:'allied'},
+ {k:'slt',n:'言語治療',d:'說話、語言、吞嚥障礙。香港工作以廣東話為主。',g:'allied'},
+ {k:'rad',n:'放射診斷／放射治療／醫學影像',d:'X 光、CT、MRI 及癌症放射治療。',g:'allied'},
+ {k:'mls',n:'醫務化驗',d:'醫院化驗室檢驗。',g:'allied'},
+ {k:'opt',n:'視光',d:'視力檢查及眼睛健康。',g:'allied'},
+ {k:'vet',n:'獸醫',d:'動物醫生。香港只有城大一間。',g:'vet'},
+ {k:'cm',n:'中醫',d:'香港本地 6 年制課程。',g:'doc'},
+ {k:'biomed',n:'生物醫學（跳板）',d:'本身不是執業資格，用來再讀研究生醫科、物治、職治等。',g:'allied'}
+];
+const HKP={
+ med:['港大、中大畢業，實習後註冊。','須考醫委會執業試（2025 年首次考試 Part I：355 人應考、58 人合格），再在港實習。或：學校在「認可醫學資格名單」且是香港永久居民，可經公營機構工作及專科培訓特別註冊，取得專科資格後服務滿 5 年可免試全面註冊。'],
+ dent:['港大 BDS 畢業可註冊。','須考香港牙醫管理委員會執業資格試。'],
+ pharm:['港大、中大畢業，實習後註冊。','須通過藥劑業及毒藥管理局三科註冊考試（2025 年 12 月「藥劑實務」86 人應考，合格率約 13%）。'],
+ nurse:['本地課程畢業可註冊。','須考護士管理局執業試（筆試及實務）。政府曾提出以公營機構服務換取免試的途徑，請再查是否生效。'],
+ pt:['本地課程畢業可註冊。','法定註冊，海外學歷逐個審批，平均約 3.5 個月，九成在 6 個月內完成。'],
+ ot:['本地課程畢業可註冊。','法定註冊，海外學歷逐個審批；2025 年修例正加入引入非本地專業人員的途徑。'],
+ slt:['港大言語及聽覺科學畢業。','香港未有法定註冊，以認可註冊制度（香港言語治療師學會）管理。工作以廣東話為主，英語訓練未必可直接應用。'],
+ rad:['本地課程畢業可註冊。','法定註冊（放射技師管理委員會），海外學歷須經審批。'],
+ mls:['本地課程畢業可註冊。','法定註冊（醫務化驗師管理委員會），海外學歷須經審批。'],
+ opt:['本地課程畢業可註冊。','法定註冊（視光師管理委員會），海外學歷須經審批。'],
+ vet:['城大 BVM 有英國 RCVS 及澳洲 AVBC 認證，可在香港、英國、澳洲、新西蘭註冊。','英澳 RCVS／AVBC 認可課程一般可申請香港註冊（例如 Adelaide 官方表示畢業生可在香港註冊），報讀前請向獸醫管理局確認。'],
+ cm:['本地 6 年制課程畢業。','非本地畢業須考香港中醫藥管理委員會執業資格試。'],
+ biomed:['不是執業資格。','作為跳板，再讀研究生醫科、物治、職治、言語治療等，返港要求按最終專業計。']
+};
+
+// P(country, field, school, programme, city, years, currency, fee/yr, livingKey, link, src, min, comp, hurdles, extra)
+const PROGS=[];
+function P(c,f,sch,prog,city,yrs,cur,fee,live,link,src,m,k,h,x){PROGS.push(Object.assign({c,f,sch,prog,city,yrs,cur,fee,live,link,src,m:m||{},k:k||{},h:h||[]},x||{}));}
+const HKC=[3,3,2,1];
+
+// ===== HONG KONG =====
+P('HK','med','香港大學 HKU','內外全科醫學士 MBBS','香港',6,'HKD',47000,'HKH','https://www.med.hku.hk','估算',{c:HKC,s:{chem:3},e:[3,3]},{b:32},['JUPAS 申請，設面試','每間醫學院約 300 個學額'],{hk:1,req:'一般要求 3322 加兩科選修，化學必修。中大 2025 年醫科六科中位數為 37／42（約平均 5*），最佳五科約 31–33 才有競爭力（估算）。'});
+P('HK','med','香港中文大學 CUHK','內外全科醫學士 MBChB','香港',6,'HKD',47000,'HKH','https://www.med.cuhk.edu.hk','官方',{c:HKC,s:{chem:3},e:[3,3]},{b:31},['JUPAS 申請，設面試','2025 年六科中位數 37／42'],{hk:1,req:'中大公佈 2025/26 年醫科六科中位數 37 分（滿分 42），錄取者大多 35 分以上。換算最佳五科約 31 分（估算）。'});
+P('HK','dent','香港大學 HKU','牙醫學士 BDS','香港',6,'HKD',47000,'HKH','https://facdent.hku.hk','估算',{c:HKC,s:{chem:3},e:[3,3]},{b:30},['JUPAS 申請，設面試'],{req:'香港唯一牙醫課程，競爭接近醫科（估算）。'});
+P('HK','pharm','香港大學 HKU','藥劑學學士 BPharm','香港',4,'HKD',47000,'HKH','https://www.med.hku.hk','估算',{c:HKC,s:{chem:3},e:[3,3]},{b:27},[],{req:'一般要求 3322，化學必修（估算）。'});
+P('HK','pharm','香港中文大學 CUHK','藥劑學學士 BPharm','香港',4,'HKD',47000,'HKH','https://www.med.cuhk.edu.hk','估算',{c:HKC,s:{chem:3},e:[3,3]},{b:26},[],{req:'一般要求 3322，化學必修（估算）。'});
+P('HK','nurse','香港大學 HKU','護理學學士 BNurs','香港',5,'HKD',47000,'HKH','https://www.med.hku.hk','估算',{c:HKC,e:[3,3]},{b:26},[],{req:'一般要求 3322 加兩科選修，生物有優勢（估算）。'});
+P('HK','nurse','香港中文大學 CUHK','護理學學士 BNurs','香港',5,'HKD',47000,'HKH','https://www.med.cuhk.edu.hk','估算',{c:HKC,e:[3,3]},{b:25},[],{req:'一般要求 3322 加兩科選修（估算）。'});
+P('HK','nurse','香港理工大學 PolyU','BSc (Hons) Nursing','香港',5,'HKD',47000,'HKH','https://www.polyu.edu.hk/sn/','估算',{c:HKC,e:[3,3]},{b:24},[],{req:'一般要求 3322，生物有優勢（估算）。'});
+P('HK','pt','香港理工大學 PolyU','BSc (Hons) Physiotherapy','香港',4,'HKD',47000,'HKH','https://www.polyu.edu.hk/rs/','估算',{c:HKC,e:[3,3]},{b:27},['約 150 個學額（2027 年入學，JUPAS 及非 JUPAS）'],{req:'一般要求 3322 加兩科選修；本地物治熱門（估算）。'});
+P('HK','ot','香港理工大學 PolyU','BSc (Hons) Occupational Therapy','香港',4,'HKD',47000,'HKH','https://www.polyu.edu.hk/rs/','估算',{c:HKC,e:[3,3]},{b:25},[],{req:'一般要求 3322 加兩科選修（估算）。'});
+P('HK','rad','香港理工大學 PolyU','BSc (Hons) Radiography','香港',4,'HKD',47000,'HKH','https://www.polyu.edu.hk/hti/','估算',{c:HKC,e:[3,3]},{b:25},[],{req:'一般要求 3322，物理或生物有優勢（估算）。'});
+P('HK','mls','香港理工大學 PolyU','BSc (Hons) Medical Laboratory Science','香港',4,'HKD',47000,'HKH','https://www.polyu.edu.hk/hti/','估算',{c:HKC,e:[3,3]},{b:23},[],{req:'一般要求 3322，化學或生物有優勢（估算）。'});
+P('HK','opt','香港理工大學 PolyU','BSc (Hons) Optometry','香港',5,'HKD',47000,'HKH','https://www.polyu.edu.hk/so/','估算',{c:HKC,e:[3,3]},{b:26},[],{req:'香港唯一視光學位（估算）。'});
+P('HK','slt','香港大學 HKU','言語及聽覺科學學士 BSc (Speech and Hearing Sciences)','香港',5,'HKD',47000,'HKH','https://admissions.hku.hk','估算',{c:HKC,e:[3,3]},{b:26},['以廣東話為主要臨床語言'],{req:'香港唯一言語治療學位（估算）。'});
+P('HK','vet','香港城市大學 CityU','獸醫學學士 BVM','香港',6,'HKD',47000,'HKH','https://www.cityu.edu.hk/admo/taxonomy/term/567','官方',{c:HKC,s:{eng:3,bio:3,chem:3},b:27,b4:['eng','math','bio','chem']},{b:29},['約 30 個本地學額','70 小時動物相關經驗','CASPer 測試','MMI 面試（7 月）'],{req:'官方：最佳五科必須包括英文、數學、生物、化學。2025 年加權中位數 33.5（城大計分 5**=8.5、5*=7、5=5.5），約等於標準計分 29；以往錄取者一般 30.5 以上（城大計分），約等於標準計分 27。'});
+P('HK','cm','香港浸會大學 HKBU','中醫學學士及生物醫學理學士','香港',6,'HKD',47000,'HKH','https://scm.hkbu.edu.hk','估算',{c:HKC,e:[3,3]},{b:24},[],{req:'一般要求 3322 加兩科選修（估算）。'});
+P('HK','cm','香港大學 HKU','中醫全科學士','香港',6,'HKD',47000,'HKH','https://www.med.hku.hk','估算',{c:HKC,e:[3,3]},{b:25},[],{req:'一般要求 3322 加兩科選修（估算）。'});
+P('HK','nurse','東華學院 TWC','Bachelor of Health Science (Hons) in Nursing（SSSDP 資助）','香港',5,'HKD',50000,'HKH','https://www.twc.edu.hk','估算',{c:HKC,e:[2,2]},{b:20},['2026/27 資助 400 個學額'],{fsrc:'估算（已扣資助）',req:'自資院校，一般要求 3322 加兩科選修（估算）。'});
+P('HK','ot','東華學院 TWC','BSc (Hons) Occupational Therapy（SSSDP 資助）','香港',4,'HKD',50000,'HKH','https://www.twc.edu.hk','估算',{c:HKC,e:[2,2]},{b:21},['2026/27 資助 60 個學額','已獲職業治療師管理委員會認可'],{req:'自資院校，一般要求 3322（估算）。'});
+P('HK','rad','東華學院 TWC','BSc (Hons) Medical Imaging／Radiation Therapy（SSSDP 資助）','香港',4,'HKD',50000,'HKH','https://www.twc.edu.hk','估算',{c:HKC,e:[2,2]},{b:21},['醫學影像 30 個、放射治療 20 個資助學額'],{req:'自資院校，一般要求 3322（估算）。'});
+P('HK','mls','東華學院 TWC','BSc (Hons) Medical Laboratory Science（SSSDP 資助）','香港',4,'HKD',50000,'HKH','https://www.twc.edu.hk','估算',{c:HKC,e:[2,2]},{b:19},[],{req:'自資院校，一般要求 3322（估算）。'});
+P('HK','nurse','香港都會大學 HKMU','Bachelor of Nursing (Hons) 普通科／精神科（SSSDP 資助）','香港',5,'HKD',50000,'HKH','https://www.hkmu.edu.hk','估算',{c:HKC,e:[2,2]},{b:20},[],{req:'自資院校，一般要求 3322（估算）。'});
+P('HK','pt','香港都會大學 HKMU','BSc (Hons) Physiotherapy（SSSDP 資助）','香港',4,'HKD',50000,'HKH','https://www.hkmu.edu.hk','估算',{c:HKC,e:[2,2]},{b:23},[],{req:'自資院校，一般要求 3322（估算）。'});
+P('HK','rad','香港都會大學 HKMU','BSc (Hons) Diagnostic Radiography（SSSDP 資助）','香港',4,'HKD',50000,'HKH','https://www.hkmu.edu.hk','估算',{c:HKC,e:[2,2]},{b:22},[],{req:'自資院校，一般要求 3322（估算）。'});
+P('HK','mls','香港都會大學 HKMU','BSc (Hons) Medical Laboratory Science（SSSDP 資助）','香港',4,'HKD',50000,'HKH','https://www.hkmu.edu.hk','估算',{c:HKC,e:[2,2]},{b:19},[],{req:'自資院校，一般要求 3322（估算）。'});
+P('HK','nurse','聖方濟各大學 SFU','Bachelor of Nursing (Hons)（SSSDP 資助）','香港',5,'HKD',50000,'HKH','https://www.sfu.edu.hk','估算',{c:HKC,e:[2,2]},{b:19},[],{req:'自資院校，一般要求 3322（估算）。'});
+
+// ===== UNITED KINGDOM =====
+const UKMED=45000, UKC=[0,3,3,0];
+P('UK','med','University of Edinburgh','MBChB Medicine','Edinburgh',6,'GBP',UKMED,'UKO','https://www.ed.ac.uk/studying/international/country/asia/east-asia/hong-kong','官方',{c:[3,3,3,1],s:{chem:6},e:[6,6,6]},{e:[6,6,6]},['UCAT','國際生約 22 個','DSE 英文 5 級（各部分 5）可代替 IELTS'],{hk:1,req:'官方：三科選修 5*5*5*，須含化學，另加生物、物理或數學其一；四科核心 3 級或以上。'});
+P('UK','med','University of Glasgow','MBChB Medicine','Glasgow',5,'GBP',UKMED,'UKO','https://www.gla.ac.uk/schools/medicine/mus/admissions/universityclinicalaptitudetestucat/','估算',{c:UKC,s:{chem:5},e:[6,6,5]},{e:[6,6,6]},['UCAT 約 2150+（2026 年國際生門檻）','國際生約 22 個','面試後錄取率約 71%'],{hk:1,req:'按 IB 38（666）換算，約需選修 5*5*5 至 5*5*5*，須含化學（估算）。'});
+P('UK','med','University of Manchester','MBChB Medicine','Manchester',5,'GBP',UKMED,'UKO','https://www.bmh.manchester.ac.uk/study/medicine/apply/data/','估算',{c:UKC,e:[6,6,5]},{e:[6,6,6]},['UCAT 約 2250+（比本地生高）','國際生 28 個（共 401 個資助學額）'],{hk:1,req:'約需選修 5*5*5 以上，須含化學或生物（估算）。'});
+P('UK','med','University of Bristol','MBChB Medicine','Bristol',5,'GBP',UKMED,'UKO','https://www.bristol.ac.uk/study/undergraduate/2027/medicine/mb-chb-medicine/','估算',{c:UKC,s:{chem:5},e:[6,6,5]},{e:[6,6,6]},['UCAT 約 2270+','國際生約 30 個','IELTS 7.5（各項 7.0）'],{hk:1,req:'約需選修 5*5*5 以上，須含化學（估算）。'});
+P('UK','med','Newcastle University','MBBS Medicine','Newcastle',5,'GBP',UKMED,'UKO','https://www.ncl.ac.uk/mediav8/fms/files/2027%20Admissions%20Policy%20FINAL.pdf','估算',{c:UKC,e:[6,5,5]},{e:[6,6,5]},['國際生只按 UCAT 總分排名（成績達標即可）','UCAT 約 2210（預測）','面試後錄取率約 93%（2025）'],{hk:1,req:'成績達最低要求後，國際生只比 UCAT（估算約選修 5*55）。'});
+P('UK','med','University of Leeds','MBChB Medicine','Leeds',5,'GBP',UKMED,'UKO','https://courses.leeds.ac.uk/5580/medicine-and-surgery-mbchb','估算',{c:UKC,s:{chem:5,bio:5},e:[6,6,5]},{e:[6,6,6]},['UCAT 約 2070（預測）'],{hk:1,req:'須含化學及生物，約選修 5*5*5（估算）。'});
+P('UK','med','University of Liverpool','MBChB Medicine','Liverpool',5,'GBP',UKMED,'UKO','https://www.liverpool.ac.uk/media/livacuk/schoolofmedicine/admissions/A100,Departmental,Supplement,E2027.pdf','估算',{c:UKC,s:{chem:5},e:[6,6,5]},{e:[6,6,6]},['國際生約 30 個','國際生與本地生分開排名','面試後錄取率約 16%'],{hk:1,req:'須含化學，約選修 5*5*5（估算）。'});
+P('UK','med','University of Birmingham','MBChB Medicine','Birmingham',5,'GBP',UKMED,'UKO','https://www.birmingham.ac.uk/documents/college-mds/medical-school/mbchb-admissions-statistics-sept-2025.pdf','估算',{c:UKC,s:{chem:5},e:[6,6,5]},{e:[6,6,6]},['成績達 A*AA 水平後，國際生只按 UCAT 排名','國際生 28 個'],{hk:1,req:'A*AA 約等於選修 5*5*5 至 5**55，須含化學（估算）。'});
+P('UK','med','Imperial College London','MBBS Medicine','London',6,'GBP',UKMED,'LON','https://www.imperial.ac.uk/media/imperial-college/medicine/study/undergraduate/A100-FOI-FAQs-2026--v2.pdf','估算',{c:UKC,s:{chem:6,bio:6},e:[6,6,6]},{e:[7,6,6]},['UCAT 約 2310+','海外學額 74 個（英國最多）'],{hk:1,req:'須含化學及生物，約選修 5*5*5* 以上（估算）。'});
+P('UK','med','University College London','MBBS Medicine','London',6,'GBP',UKMED,'LON','https://www.ucl.ac.uk/study/prospective-students/undergraduate/courses/medicine-mbbs-bsc','估算',{c:UKC,s:{chem:6,bio:6},e:[6,6,6]},{e:[7,6,6]},['UCAT 約 2300+','海外學額 24 個'],{hk:1,req:'須含化學及生物，約選修 5*5*5* 以上（估算）。'});
+P('UK','med',"King's College London",'MBBS Medicine','London',5,'GBP',UKMED,'LON','https://www.kcl.ac.uk/assets/about/pdf/strategy/admissions-statistics/admissions-statistics-for-undergraduate-medicine-ucas-code-a100.pdf','估算',{c:UKC,s:{chem:5,bio:5},e:[6,6,6]},{e:[7,6,6]},['UCAT 約 2300（預測）'],{hk:1,req:'約選修 5*5*5* 以上（估算）。'});
+P('UK','med','University of Nottingham','BMBS Medicine','Nottingham',5,'GBP',UKMED,'UKO','https://www.nottingham.ac.uk/studywithus/ugstudy/courses/UG/2026/Medicine-BMBS.html','估算',{c:UKC,s:{chem:5,bio:5},e:[6,6,5]},{e:[6,6,6]},['國際生約 30 個','UCAT 約 2100（預測）'],{hk:1,req:'須含化學及生物，約選修 5*5*5（估算）。'});
+P('UK','med','University of Southampton','BM5 Medicine','Southampton',5,'GBP',UKMED,'UKO','https://www.southampton.ac.uk/courses/medicine-bm5-degree-bmbs','估算',{c:UKC,s:{bio:5},e:[6,6,5]},{e:[6,6,6]},['國際生約 25 個','不必修化學，生物必修'],{hk:1,req:'生物必修，約選修 5*5*5（估算）。'});
+P('UK','med','University of Leicester','MBChB Medicine','Leicester',5,'GBP',UKMED,'UKO','https://le.ac.uk/courses/medicine-mbchb/2026','估算',{c:UKC,e:[6,6,5]},{e:[6,6,6]},['國際生約 30 個','面試後錄取率約 29%'],{hk:1,req:'約選修 5*5*5，須含化學或生物（估算）。'});
+P('UK','med','University of Sheffield','MBChB Medicine','Sheffield',5,'GBP',UKMED,'UKO','https://sheffield.ac.uk/media/121347/download?attachment=','估算',{c:UKC,e:[6,6,5]},{e:[6,6,6]},['UCAT 約 2070+','面試後錄取率約 53%'],{hk:1,req:'約選修 5*5*5，須含化學或生物（估算）。'});
+P('UK','med','Cardiff University','MBBCh Medicine','Cardiff',5,'GBP',UKMED,'UKO','https://www.cardiff.ac.uk/study/undergraduate/courses/course/medicine-mbbch','估算',{c:UKC,s:{chem:5,bio:5},e:[6,6,5]},{e:[6,6,6]},['國際生約 30 個','UCAT 要求較低（預測約 1550）'],{hk:0,req:'須含化學及生物，約選修 5*5*5（估算）。'});
+P('UK','med','Keele University','MBChB Medicine','Keele',5,'GBP',UKMED,'UKO','https://www.keele.ac.uk/study/undergraduate/undergraduatecourses/medicine/','估算',{c:UKC,e:[6,6,5]},{e:[6,6,6]},['國際生約 10 個','UCAT 約 1950'],{hk:0,req:'約選修 5*5*5（估算）。'});
+P('UK','med','Kent and Medway Medical School','MBBS Medicine','Canterbury',5,'GBP',UKMED,'UKO','https://kmms.ac.uk/study/','估算',{c:UKC,e:[6,6,5]},{e:[6,6,6]},['國際生約 25 個','UCAT 約 1900'],{hk:0,req:'約選修 5*5*5（估算）。'});
+P('UK','med','Hull York Medical School','MBBS Medicine','York',5,'GBP',UKMED,'UKO','https://www.hyms.ac.uk/medicine/applying/selection-procedure','估算',{c:UKC,s:{chem:5,bio:5},e:[6,6,5]},{e:[6,6,6]},['國際生約 25 個','UCAT 約 2020'],{hk:0,req:'須含化學及生物，約選修 5*5*5（估算）。'});
+P('UK','dent',"King's College London",'BDS Dentistry','London',5,'GBP',45000,'LON','https://www.kcl.ac.uk','估算',{c:UKC,s:{chem:6,bio:6},e:[6,6,6]},{e:[7,6,6]},['UCAT','國際生名額少'],{req:'約選修 5*5*5* 以上，須含化學及生物（估算）。'});
+P('UK','dent','University of Glasgow','BDS Dentistry','Glasgow',5,'GBP',45000,'UKO','https://www.gla.ac.uk','估算',{c:UKC,s:{chem:5,bio:5},e:[6,6,5]},{e:[6,6,6]},['UCAT','國際生名額少'],{req:'約選修 5*5*5，須含化學及生物（估算）。'});
+P('UK','pharm','University of Nottingham','MPharm Pharmacy','Nottingham',4,'GBP',26000,'UKO','https://www.nottingham.ac.uk','估算',{c:UKC,s:{chem:5},e:[5,5,4]},{e:[5,5,5]},['英國註冊要再實習一年'],{req:'約選修 554，須含化學（估算）。'});
+P('UK','pharm','University of Manchester','MPharm Pharmacy','Manchester',4,'GBP',26000,'UKO','https://www.manchester.ac.uk','估算',{c:UKC,s:{chem:5},e:[5,5,5]},{e:[6,5,5]},['英國註冊要再實習一年'],{req:'約選修 555，須含化學（估算）。'});
+P('UK','nurse','University of Edinburgh','BN (Hons) Nursing Studies','Edinburgh',4,'GBP',25000,'UKO','https://www.ed.ac.uk/studying/international/country/asia/east-asia/hong-kong','官方',{c:[3,3,3,1],e:[5,5,5]},{e:[5,5,5]},['蘇格蘭學位 4 年','IELTS 7.0（護士註冊要求）'],{fsrc:'估算',req:'官方一般要求：四科核心 3 級，三科選修 555。'});
+P('UK','nurse','University of Roehampton','BSc (Hons) Nursing (Adult)','London',3,'GBP',18500,'LON','https://www.roehampton.ac.uk','估算',{c:UKC,e:[4,4,3]},{e:[4,4,4]},['IELTS 7.0（各項 6.5，NMC 要求）'],{fsrc:'第三方',req:'約 A-level BBC，即選修約 443（估算）。學費約 £18,500（第三方）。'});
+P('UK','nurse','Kingston University','BSc (Hons) Adult Nursing','London',3,'GBP',18500,'LON','https://www.kingston.ac.uk','估算',{c:UKC,e:[4,4,3]},{e:[4,4,4]},['IELTS 7.0（各項 6.5）'],{req:'約 A-level BBC，即選修約 443（估算）。'});
+P('UK','pt','University of Brighton','BSc (Hons) Physiotherapy','Brighton',3,'GBP',17250,'UKO','https://www.brighton.ac.uk','第三方',{c:UKC,s:{bio:5},e:[5,5,4]},{e:[5,5,5]},['IELTS 7.0'],{fsrc:'第三方（2025–26）',req:'A-level AAB 包生物，約選修 554 須含生物 5 級（換算估算）。'});
+P('UK','pt','University of Gloucestershire','BSc (Hons) Physiotherapy','Cheltenham',3,'GBP',17500,'UKO','https://www.glos.ac.uk/international/country-specific-information/hong-kong/','官方',{c:[0,3,3,0],s:{bio:4},e:[4,4]},{e:[5,5]},['只接受 IELTS 7.0（各項 6.5），不接受 DSE 英文','須有清晰的個人陳述'],{req:'官方：核心科 3 級、數學 3 級，兩科選修，生物須 4 級。'});
+P('UK','pt','Coventry University','BSc (Hons) Physiotherapy','Coventry',3,'GBP',20050,'UKO','https://www.coventry.ac.uk','第三方',{c:UKC,s:{bio:4},e:[4,4,4]},{e:[5,4,4]},['IELTS 7.0'],{fsrc:'第三方',req:'約 A-level BBB，即選修約 444 含生物（估算）。'});
+P('UK','ot',"City St George's, University of London",'BSc (Hons) Occupational Therapy','London',3,'GBP',18000,'LON','https://www.citystgeorges.ac.uk/prospective-students/courses/undergraduate/occupational-therapy','官方',{c:UKC,e:[4,4,4]},{e:[5,4,4]},['HCPC 英文標準 IELTS 7.0'],{fsrc:'估算',req:'官方：一般 A-level BBB，約選修 444（換算估算）。'});
+P('UK','ot','York St John University','Occupational Therapy BSc (Hons)','York',3,'GBP',16000,'UKO','https://www.yorksj.ac.uk/courses/undergraduate/occupational-therapy/occupational-therapy-bsc-hons/','官方',{c:UKC,e:[4,4,4]},{e:[5,4,4]},['IELTS 7.0（各項 6.5）'],{fsrc:'估算',req:'官方：BBB 或 120 UCAS 分，約選修 444（換算估算）。'});
+P('UK','slt','University of Manchester','BSc Speech and Language Therapy','Manchester',4,'GBP',26000,'UKO','https://www.manchester.ac.uk/study/undergraduate/courses/2026/11331/bsc-speech-and-language-therapy/','官方',{c:UKC,e:[5,5,4]},{e:[5,5,5]},['IELTS 8.0（各項 7.5）','須海外無犯罪紀錄證明'],{fsrc:'估算',req:'官方：A-level AAB，約選修 554（換算估算）。英文要求極高。'});
+P('UK','slt','Leeds Beckett University','BSc (Hons) Speech and Language Therapy','Leeds',3,'GBP',17000,'UKO','https://www.leedsbeckett.ac.uk/courses/speech-language-therapy-bsc/','官方',{c:UKC,e:[5,5,4]},{e:[5,5,5]},['IELTS 7.5（各項 7.0）'],{fsrc:'估算',req:'官方：128 UCAS 分，約選修 554（換算估算）。'});
+P('UK','rad',"City St George's, University of London",'BSc (Hons) Radiography','London',3,'GBP',18500,'LON','https://www.citystgeorges.ac.uk','估算',{c:UKC,e:[4,4,4]},{e:[5,4,4]},['HCPC 英文標準 IELTS 7.0（各項 6.5）'],{req:'約 A-level BBB，選修約 444（估算）。'});
+P('UK','opt','Aston University','BSc Optometry','Birmingham',3,'GBP',22000,'UKO','https://www.aston.ac.uk','估算',{c:UKC,e:[5,5,4]},{e:[5,5,5]},['英國註冊前要再實習約一年'],{req:'約 A-level ABB，選修約 554（估算）。'});
+P('UK','biomed','University of Edinburgh','BSc Biomedical Sciences','Edinburgh',4,'GBP',30000,'UKO','https://www.ed.ac.uk/studying/international/country/asia/east-asia/hong-kong','官方',{c:[3,3,3,1],s:{bio:5,chem:5},e:[5,5,5]},{e:[5,5,5]},['可作研究生醫科跳板'],{fsrc:'估算',req:'官方：四科核心 3 級，三科選修 555，須含生物及化學。'});
+P('UK','biomed','University of Manchester','Biosciences（生物醫學類）','Manchester',3,'GBP',30000,'UKO','https://www.bmh.manchester.ac.uk/study/biosciences/international/','官方',{c:UKC,e:[5,5,4]},{e:[5,5,5]},['IELTS 6.5（各項 6.5）'],{fsrc:'估算',req:'官方：一般 555 至 554，須含兩科理科（生物、化學、物理或數學）。'});
+P('UK','vet','Royal Veterinary College','BVetMed Veterinary Medicine','London',5,'GBP',50360,'LON','https://www.rvc.ac.uk','官方',{c:UKC,s:{bio:5,chem:5},e:[5,5,5]},{e:[6,6,5]},['70 小時獸醫診所經驗及 70 小時其他動物工作經驗','IELTS 7.0（各項 6.5）','UCAS 10 月中截止'],{fsrc:'官方',req:'官方：生物、化學及另一科選修 555（最低要求，競爭者通常更高）。'});
+P('UK','vet','Royal Veterinary College','獸醫綜合預科年 Integrated Foundation Year（國際生）','London',6,'GBP',45000,'LON','https://www.rvc.ac.uk','估算',{c:UKC,s:{bio:4,chem:4},e:[4,4,4]},{e:[5,5,4]},['2027 年秋季首辦','要求以官方公佈為準'],{req:'專為未達直入要求的國際生而設，要求較低（估算）。'});
+P('UK','vet','University of Edinburgh','BVM&S Veterinary Medicine','Edinburgh',5,'GBP',45000,'UKO','https://www.ed.ac.uk/studying/international/country/asia/east-asia/hong-kong','官方',{c:[3,3,3,1],s:{bio:6,chem:6},e:[6,6,6]},{e:[6,6,6]},['DSE 英文 5 級（各部分 5）可代替 IELTS'],{fsrc:'估算',req:'官方：三科選修 5*5*5*，須含化學、生物及另一科；其他選修最少 3 級。'});
+P('UK','vet','University of Glasgow','BVMS Veterinary Medicine','Glasgow',5,'GBP',45000,'UKO','https://www.gla.ac.uk','估算',{c:UKC,s:{bio:5,chem:5},e:[6,6,5]},{e:[6,6,6]},['動物工作經驗'],{req:'約選修 5*5*5，須含生物及化學（估算）。'});
+P('UK','vet','University of Liverpool','BVSc Veterinary Science','Liverpool',5,'GBP',42000,'UKO','https://www.liverpool.ac.uk','估算',{c:UKC,s:{bio:5,chem:5},e:[6,6,5]},{e:[6,6,6]},['動物工作經驗'],{req:'約選修 5*5*5（估算）。'});
+P('UK','vet','University of Nottingham','BVM BVS Veterinary Medicine and Surgery','Nottingham',5,'GBP',40000,'UKO','https://www.nottingham.ac.uk','估算',{c:UKC,s:{bio:5,chem:5},e:[6,5,5]},{e:[6,6,5]},['動物工作經驗'],{req:'約選修 5*55（估算）。'});
+
+// ===== CANADA =====
+P('CA','nurse','McMaster University','BScN Nursing','Hamilton',4,'CAD',45000,'ONT','https://nursing.mcmaster.ca','估算',{c:[0,4,3,0],s:{bio:4,chem:4},b:21},{b:25},['CASPer','McMaster 校園收國際生','註冊須符合安省護士協會要求'],{req:'Queen\'s 指 DSE 平均約 4 級屬有競爭力範圍；熱門護理課程估計要更高（估算）。'});
+P('CA','nurse','Western University','Direct Entry BScN（3.5 年）','London, Ontario',3.5,'CAD',45000,'ONT','https://www.uwo.ca/fhs/nursing/undergrad/bscn/','估算',{c:[0,4,3,0],s:{bio:4,chem:4},b:22},{b:26},['CASPer','2026 年 9 月首屆','國際生須查安省護士協會居留要求'],{req:'經 OUAC 申請，競爭入學（估算）。'});
+P('CA','nurse','George Brown College／TMU','BScN Nursing（合辦）','Toronto',4,'CAD',18475,'TOR','https://www.georgebrown.ca','第三方',{c:[0,4,3,0],s:{bio:4,chem:4},b:19},{b:22},['經安省學院申請系統 OCAS 申請'],{fsrc:'第三方',req:'約 DSE 平均 4 級（估算）。學費約 CAD 18,475（第三方）。'});
+P('CA','biomed',"Queen's University",'Bachelor of Health Sciences（直入）','Kingston',4,'CAD',60000,'ONT','https://www.queensu.ca/admission/applying/admission-requirements/hkdse','官方',{c:[0,4,4,0],s:{bio:4,chem:4},b:23},{b:27},['可用預測成績申請','不接受綜合科學','可作醫科、物治、職治跳板'],{fsrc:'估算',req:'官方：接受 DSE 及預測成績，不收應用學習科目；一般平均約 4 級進入競爭範圍，健康科學估計要更高。'});
+P('CA','biomed','University of Toronto','Life Sciences','Toronto',4,'CAD',65000,'TOR','https://future.utoronto.ca','估算',{c:[0,4,4,0],s:{bio:4,chem:4},b:23},{b:27},['需微積分程度數學（M1/M2 有幫助）','可作研究生物治、職治、言語、藥劑、牙醫跳板'],{req:'估算：最佳五科約 23–27。'});
+P('CA','biomed','McGill University','Science（Life Sciences）','Montreal',4,'CAD',50000,'MTL','https://mcgill.ca/undergraduate-admissions/node/690','官方',{c:[0,4,4,0],s:{bio:4,chem:4},b:23},{b:27},['以校內成績及預測 DSE 審批'],{fsrc:'估算',req:'官方：四科核心及兩至三科甲類選修，先看預測成績，再看最終成績。分數為估算。'});
+P('CA','vet','University of Guelph → Ontario Veterinary College','Bio-Medical Science 再讀 DVM','Guelph',8,'CAD',60000,'ONT','https://www.uoguelph.ca/ovc/dvm-program-application','官方',{c:[0,4,4,0],s:{bio:4,chem:4},b:22},{b:26},['DVM 共 120 個學額，非加拿大人約 15 個','要先讀大學','CASPer'],{fsrc:'估算',req:'先讀本科（估算最佳五科 22 以上），再以國際生組別申請 DVM。'});
+P('CA','med','加拿大醫學院（國際生）','MD（須先讀本科）','—',8,'CAD',0,'ONT','https://www.afmc.ca','第三方',{},{},['安省醫學院 2026 年起實際上不收國際生','省外（如 McGill）國際生錄取率約 1%'],{info:1,req:'不建議作為海外醫科路線。如想在加拿大讀醫，實際上要先取得永久居民身份。'});
+P('CA','dent','加拿大牙醫學院','DDS（須先讀本科）','—',8,'CAD',0,'ONT','https://future.utoronto.ca','估算',{},{},['國際生名額極少'],{info:1,req:'先讀 3–4 年本科，再讀 4 年牙醫。'});
+P('CA','pharm','加拿大藥劑學院（如 U of T）','PharmD（須先讀大學課程）','Toronto',6,'CAD',0,'TOR','https://future.utoronto.ca','估算',{},{},['國際生名額有限'],{info:1,req:'一般先讀 1–2 年大學課程，再讀 4 年 PharmD。'});
+P('CA','pt','加拿大物理治療','MScPT（碩士入學）','—',6,'CAD',0,'TOR','https://future.utoronto.ca','估算',{},{},['國際生資格要逐間查'],{info:1,req:'先讀 4 年本科（如 Life Sciences、Kinesiology），再讀約 2 年碩士。'});
+P('CA','ot','加拿大職業治療','MScOT（碩士入學）','—',6,'CAD',0,'TOR','https://future.utoronto.ca','估算',{},{},['國際生資格要逐間查'],{info:1,req:'先讀 4 年本科，再讀約 2 年碩士。'});
+P('CA','slt','加拿大言語治療','MHSc SLP（碩士入學）','—',6,'CAD',0,'TOR','https://future.utoronto.ca','估算',{},{},['國際生資格要逐間查','香港以廣東話執業'],{info:1,req:'先讀 4 年本科，再讀約 2 年碩士。'});
+P('CA','opt','University of Waterloo','OD Optometry（須先讀 3 年大學）','Waterloo',7,'CAD',0,'ONT','https://uwaterloo.ca','估算',{},{},['國際生名額有限'],{info:1,req:'先讀至少 3 年大學，再讀 4 年視光博士。'});
+
+// ===== AUSTRALIA =====
+P('AU','med','Monash University','BMedSc + MD（直入，國際生）','Melbourne',5,'AUD',101600,'MEL','https://www.monash.edu/medicine/som/direct-entry/international/entry-requirements','第三方',{c:[0,4,0,0],b:25},{b:30},['ISAT 總分 170 或以上，兩部分各 165 或以上','MMI 面試','國際生約 90 個（第三方）','申請約 6 月底截止，早於放榜'],{hk:1,fsrc:'第三方',req:'ISAT 要求為官方資料；DSE 約 25 分為升學機構整理。'});
+P('AU','med','UNSW Sydney','BMed/MD Medicine','Sydney',6,'AUD',95500,'SYD','https://www.unsw.edu.au/medicine-health/study-with-us/undergraduate/applying-to-medicine/international-applicants','估算',{c:[0,4,0,0],b:28},{b:31},['ISAT 165 以上或 UCAT ANZ 50 百分位以上','國際生每年約 300 個面試位','UNSW 表示 DSE 換算正在檢討'],{hk:1,fsrc:'第三方',req:'以往要求約 ATAR 96，換算 DSE 為估算。'});
+P('AU','med','Adelaide University','BMedSt/MD Medicine','Adelaide',6,'AUD',99000,'ADL','https://adelaide.edu.au','估算',{c:[0,4,0,0],b:24},{b:28},['面試邀請按 UCAT ANZ 分數','最終按面試、UCAT ANZ、成績排序'],{hk:1,fsrc:'第三方',req:'成績主要作同分時比較（估算）。'});
+P('AU','med','University of Western Australia','Bachelor + MD（保證升讀路線）','Perth',7,'AUD',75000,'PER','https://www.uwa.edu.au','估算',{c:[0,4,0,0],b:27},{b:30},['ISAT'],{hk:1,req:'先讀 3 年本科再讀 4 年 MD（估算）。'});
+P('AU','med','University of Newcastle／UNE','Joint Medical Program BMed/MD','Newcastle',5,'AUD',85000,'NCL','https://www.newcastle.edu.au','第三方',{c:[0,4,0,0],b:25},{b:28},['UCAT ANZ'],{hk:0,fsrc:'估算',req:'升學機構整理：最佳五科最少 25 分。'});
+P('AU','dent','Adelaide University','Bachelor of Dental Surgery','Adelaide',5,'AUD',85000,'ADL','https://adelaide.edu.au','估算',{c:[0,4,0,0],s:{chem:4},b:27},{b:30},['UCAT ANZ'],{req:'估算。'});
+P('AU','pharm','Monash University','BPharm (Hons) + MPharm','Melbourne',4.5,'AUD',52000,'MEL','https://www.monash.edu','估算',{c:[0,4,0,0],s:{chem:4},b:23},{b:26},['IELTS 7.0'],{req:'估算。'});
+P('AU','nurse','Monash University','Bachelor of Nursing','Melbourne',3,'AUD',40000,'MEL','https://www.monash.edu','估算',{c:[0,4,0,0],b:19},{b:22},['IELTS 7.0（澳洲註冊要求）'],{req:'估算。'});
+P('AU','pt','Monash University','Bachelor of Physiotherapy (Hons)','Melbourne',4,'AUD',50000,'MEL','https://www.monash.edu','第三方',{c:[0,4,0,0],b:22},{b:24},['IELTS 7.0'],{fsrc:'估算',req:'香港升學機構整理：DSE 22 分（2025 年資料）。'});
+P('AU','pt','University of Sydney','Bachelor of Applied Science (Physiotherapy)','Sydney',4,'AUD',55000,'SYD','https://www.sydney.edu.au','第三方',{c:[0,4,0,0],b:20},{b:23},['IELTS 7.0'],{fsrc:'估算',req:'香港升學機構整理：DSE 20 分（2025 年資料）。'});
+P('AU','pt','University of Queensland','Bachelor of Physiotherapy (Hons)','Brisbane',4,'AUD',52000,'BNE','https://study.uq.edu.au','第三方',{c:[0,4,0,0],b:26},{b:28},['IELTS 7.0'],{fsrc:'估算',req:'香港升學機構整理：DSE 26 分（2025 年資料）。'});
+P('AU','ot','Monash University','Bachelor of Occupational Therapy (Hons)','Melbourne',4,'AUD',44000,'MEL','https://www.monash.edu','估算',{c:[0,4,0,0],b:21},{b:23},['須年滿 18 歲才可實習','澳洲註冊要 IELTS 7'],{fsrc:'第三方（4 年約 AUD 176,000）',req:'估算。'});
+P('AU','ot','University of Sydney','Bachelor of Applied Science (Occupational Therapy)','Sydney',4,'AUD',61000,'SYD','https://www.sydney.edu.au','估算',{c:[0,4,0,0],b:20},{b:23},['IELTS 7.0'],{fsrc:'第三方（2025）',req:'估算。'});
+P('AU','ot','University of Queensland','Bachelor of Occupational Therapy (Hons)','Brisbane',4,'AUD',51200,'BNE','https://study.uq.edu.au','估算',{c:[0,4,0,0],b:22},{b:24},['IELTS 7.0'],{fsrc:'第三方（2025）',req:'估算。'});
+P('AU','slt','University of Queensland','Bachelor of Speech Pathology (Hons)','Brisbane',4,'AUD',50000,'BNE','https://study.uq.edu.au','估算',{c:[0,5,0,0],b:23},{b:26},['英文要求高','香港以廣東話執業'],{req:'估算。'});
+P('AU','rad','Monash University','Bachelor of Radiography and Medical Imaging (Hons)','Melbourne',4,'AUD',50000,'MEL','https://www.monash.edu','估算',{c:[0,4,0,0],b:24},{b:26},['IELTS 7.0'],{req:'估算。'});
+P('AU','opt','UNSW Sydney','Bachelor of Vision Science + Master of Clinical Optometry','Sydney',5,'AUD',55000,'SYD','https://www.unsw.edu.au','估算',{c:[0,4,0,0],b:26},{b:28},[],{req:'估算。'});
+P('AU','vet','Adelaide University','BSc (Veterinary Bioscience) + DVM','Adelaide',6,'AUD',65000,'ADL','https://adelaide.edu.au/study/degrees/bachelor-of-science-veterinary-bioscience/','官方',{c:[0,4,0,0],b:21},{b:24},['兩個學位共 6 年','升讀 DVM 須達成績要求（請核實）','官方：畢業生可在香港、英國等地註冊'],{fsrc:'估算',req:'官方：國際生 DSE 21 分（只限國際生的課程）。'});
+P('AU','vet','Murdoch University','BSc + DVM','Perth',5,'AUD',68400,'PER','https://www.murdoch.edu.au/course/undergraduate/b1402','官方',{c:[0,4,0,0],b:26},{b:28},['Casper 測試','2026 年國際生首年學費 AUD 68,400'],{fsrc:'官方（2026）',req:'官方未列 DSE 分數；按 ATAR 約 94 推算（估算）。'});
+P('AU','vet','University of Queensland','Bachelor of Veterinary Science (Hons)','Gatton',5,'AUD',75000,'BNE','https://study.uq.edu.au/study-options/programs/bachelor-veterinary-science-honours-2378','官方',{c:[0,4,0,0],s:{chem:4},b:28},{b:30},['成績佔 60%、Casper 佔 40%','國際生約 45 人（約 32%）'],{fsrc:'估算',req:'官方：調整後 ATAR 最少 95；DSE 換算為估算。'});
+P('AU','vet','University of Sydney','BVetBio + DVM','Sydney',6,'AUD',80000,'SYD','https://www.sydney.edu.au','估算',{c:[0,4,0,0],b:28},{b:30},['動物工作經驗'],{req:'估算。'});
+
+// ---------- state ----------
+const DEF={g:{chi:'',eng:'',math:'',bio:'',chem:'',el3:'',m12:''},el3n:'',csd:true,cf:'ALL',sf:'ALL',fx:{GBP:10.4,CAD:5.7,AUD:5.4},bro:false,broCost:9000,costField:'pt',grp:'allied',w:{cost:3,hk:4,entry:3,years:2,family:3,abroad:2},open:[]};
+let S=JSON.parse(JSON.stringify(DEF));
+try{const raw=localStorage.getItem('medpath-v1');if(raw){const o=JSON.parse(raw);S=Object.assign(S,o);S.g=Object.assign({},DEF.g,o.g||{});S.fx=Object.assign({},DEF.fx,o.fx||{});S.w=Object.assign({},DEF.w,o.w||{});}}catch(e){}
+function save(){try{localStorage.setItem('medpath-v1',JSON.stringify(S));}catch(e){}}
+
+const gv=k=>(S.g[k]===''||S.g[k]==null)?null:G[S.g[k]];
+const any=()=>Object.values(S.g).some(v=>v!=='');
+function best5(){return ['chi','eng','math','bio','chem','el3','m12'].map(gv).filter(v=>v!=null).sort((a,b)=>b-a).slice(0,5).reduce((a,b)=>a+b,0);}
+function best5incl(req){const base=req.reduce((a,k)=>a+(gv(k)||0),0);const rest=['chi','eng','math','bio','chem','el3','m12'].filter(k=>!req.includes(k)).map(gv).filter(v=>v!=null).sort((a,b)=>b-a);return base+(rest[0]||0);}
+function pool(){return ['bio','chem','el3','m12'].map(gv).filter(v=>v!=null).sort((a,b)=>b-a);}
+const gname=v=>v==null?'未填':GN[v];
+
+function check(p,rule,isMin){
+  const out=[];
+  if(!rule) return out;
+  if(rule.c){['chi','eng','math'].forEach((k,i)=>{const r=rule.c[i];if(r>0){const v=gv(k);if((v||0)<r) out.push(`${SN[k]}需 ${GN[r]}，現時 ${gname(v)}`);}});
+    if(rule.c[3]&&!S.csd) out.push('公民與社會發展需「達標」');}
+  if(rule.s){for(const k in rule.s){const r=rule.s[k],v=gv(k);if((v||0)<r) out.push(`${SN[k]}需 ${GN[r]}，現時 ${gname(v)}`);}}
+  if(rule.e){const pl=pool();let bad=false;rule.e.forEach((r,i)=>{if((pl[i]||0)<r) bad=true;});
+    if(bad){const now=rule.e.map((_,i)=>pl[i]!=null?GN[pl[i]]:'－').join('');out.push(`最好的 ${rule.e.length} 科選修需 ${rule.e.map(r=>GN[r]).join('')}，現時 ${now}`);}}
+  if(rule.b){const b=(p.m&&p.m.b4)?best5incl(p.m.b4):best5();if(b<rule.b) out.push(`${p.m&&p.m.b4?'指定最佳五科':'最佳五科'}需約 ${rule.b} 分，現時 ${b} 分（差 ${rule.b-b}）`);}
+  return out;
+}
+function evalP(p){
+  if(p.info) return {st:'info',gaps:[]};
+  if(!any()) return {st:'none',gaps:[]};
+  const g1=check(p,p.m,true);
+  if(g1.length) return {st:'gap',gaps:g1};
+  const g2=check(p,p.k,false);
+  return g2.length?{st:'min',gaps:g2}:{st:'comp',gaps:[]};
+}
+const STL={comp:'有競爭力',min:'達最低要求',gap:'未達',none:'未輸入成績',info:'路線資訊'};
+
+// ---------- map ----------
+function drawMap(){
+  const svg=document.getElementById('map');const rows=MASK.split('|');let h='';const cell=10;
+  rows.forEach((r,j)=>{const runs=r.split('.').map(x=>parseInt(x,36));let i=0,on=false;runs.forEach(n=>{if(on){for(let t=0;t<n;t++){const x=(i+t)*cell+5,y=j*cell+5;if(x>320&&x<1770&&y>25&&y<625) h+=`<circle class="d" cx="${x}" cy="${y}" r="3.1"/>`;}}i+=n;on=!on;});});
+  let pins='';CORDER.forEach(c=>{const o=C[c];const tx=o.a==='end'?o.x-26:o.x+26;pins+=`<g class="pin" data-c="${c}" tabindex="0" role="button" aria-label="${o.n}"><circle class="halo" cx="${o.x}" cy="${o.y}" r="38"/><circle class="core" cx="${o.x}" cy="${o.y}" r="15"/><text text-anchor="${o.a}" x="${tx}" y="${o.y-12}">${o.f} ${o.n}</text><text class="cnt" text-anchor="${o.a}" x="${tx}" y="${o.y+32}" id="cnt-${c}"></text></g>`;});
+  svg.innerHTML=h+pins;
+  svg.querySelectorAll('.pin').forEach(g=>{const fn=()=>{S.cf=(S.cf===g.dataset.c)?'ALL':g.dataset.c;save();renderAll();};g.addEventListener('click',fn);g.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();fn();}});});
+}
+let lastLit={};
+function updateMap(){
+  const has=any();let legend=[];
+  CORDER.forEach(c=>{
+    const ps=PROGS.filter(p=>p.c===c&&!p.info);const ok=ps.filter(p=>{const s=evalP(p).st;return s==='comp'||s==='min';}).length;const comp=ps.filter(p=>evalP(p).st==='comp').length;
+    const g=document.querySelector(`.pin[data-c="${c}"]`);const t=document.getElementById('cnt-'+c);
+    t.textContent=has?`${ok} 個課程達要求`:`${ps.length} 個課程`;
+    const lit=has&&ok>0;g.classList.toggle('lit',lit);g.classList.toggle('sel',S.cf===c);
+    if(lit&&!lastLit[c]){g.classList.remove('pulse');void g.getBBox();g.classList.add('pulse');}
+    lastLit[c]=lit;
+    legend.push(`${C[c].f} ${C[c].n}：${has?`有競爭力 ${comp}、達最低要求 ${ok-comp}`:`共 ${ps.length} 個課程`}`);
+  });
+  document.getElementById('maplegend').innerHTML=legend.map(s=>`<span>${s}</span>`).join('')+'<span>點選地圖上的地點可只看該地</span>';
+}
+
+// ---------- grades UI ----------
+function buildGrades(){
+  const opts=['','5**','5*','5','4','3','2','1','U'];
+  let h='';SUBJ.forEach(s=>{
+    h+=`<div class="g ${s.req?'req':''}"><label for="g-${s.k}">${s.n}</label>`;
+    if(s.k==='el3') h+=`<input type="text" id="el3n" placeholder="科目名稱，如物理" style="margin-bottom:6px">`;
+    h+=`<select id="g-${s.k}">${opts.map(o=>`<option value="${o}">${o===''?'未填':o}</option>`).join('')}</select></div>`;
+  });
+  h+=`<div class="csd"><input type="checkbox" id="csd"><label for="csd" style="margin:0">公民與社會發展「達標」</label></div>`;
+  document.getElementById('ggrid').innerHTML=h;
+  SUBJ.forEach(s=>{const el=document.getElementById('g-'+s.k);el.value=S.g[s.k];el.addEventListener('change',()=>{S.g[s.k]=el.value;save();renderAll();});});
+  const n=document.getElementById('el3n');n.value=S.el3n||'';n.addEventListener('input',()=>{S.el3n=n.value;SN.el3=n.value||'第三科選修';save();});SN.el3=S.el3n||'第三科選修';
+  const c=document.getElementById('csd');c.checked=S.csd;c.addEventListener('change',()=>{S.csd=c.checked;save();renderAll();});
+  document.getElementById('clearBtn').onclick=()=>{Object.keys(S.g).forEach(k=>S.g[k]='');save();SUBJ.forEach(s=>document.getElementById('g-'+s.k).value='');renderAll();};
+  document.getElementById('demoBtn').onclick=()=>{S.g={chi:'4',eng:'5',math:'5',bio:'5*',chem:'5',el3:'4',m12:''};S.el3n='物理';n.value='物理';SN.el3='物理';save();SUBJ.forEach(s=>document.getElementById('g-'+s.k).value=S.g[s.k]);renderAll();};
+  document.getElementById('printBtn').onclick=()=>window.print();
+}
+function renderScore(){
+  const el=document.getElementById('score');
+  if(!any()){el.innerHTML='<span>填入成績後，這裏會顯示最佳五科總分和最好的三科選修。</span>';return;}
+  const b=best5();const pl=pool().slice(0,3).map(v=>GN[v]).join(' ');
+  const filled=['chi','eng','math','bio','chem','el3','m12'].filter(k=>gv(k)!=null).length;
+  el.innerHTML=`<div><b>${b}</b> <span>／35　最佳五科（5**=7、5*=6、5=5）</span></div><div><b>${pl||'－'}</b> <span>　最好的三科選修（英國常用）</span></div>${filled<5?'<span>未夠五科，總分只供參考</span>':''}`;
+}
+
+// ---------- filters & fields ----------
+function renderFilters(){
+  const cf=document.getElementById('cfilter');
+  cf.innerHTML='<span class="lbl">地方</span>'+[['ALL','全部']].concat(CORDER.map(c=>[c,C[c].f+' '+C[c].n])).map(([k,n])=>`<button class="chipbtn" aria-pressed="${S.cf===k}" data-k="${k}">${n}</button>`).join('');
+  cf.querySelectorAll('button').forEach(b=>b.onclick=()=>{S.cf=b.dataset.k;save();renderAll();});
+  const sf=document.getElementById('sfilter');
+  const opts=[['ALL','全部'],['ok','有競爭力或達最低要求'],['comp','只看有競爭力'],['gap','未達（看差幾多）']];
+  sf.innerHTML='<span class="lbl">狀態</span>'+opts.map(([k,n])=>`<button class="chipbtn" aria-pressed="${S.sf===k}" data-k="${k}" ${!any()&&k!=='ALL'?'disabled':''}>${n}</button>`).join('');
+  sf.querySelectorAll('button').forEach(b=>b.onclick=()=>{S.sf=b.dataset.k;save();renderAll();});
+}
+function fmtFee(p){if(!p.fee) return '';return `學費約 ${CURSYM[p.cur]}${p.fee.toLocaleString('en-US')}／年（${p.fsrc||(p.src==='官方'?'估算':p.src)}）`;}
+function srcCls(s){return s==='官方'?'official':(s==='第三方'?'third':'');}
+function progCard(p){
+  const r=evalP(p);
+  const reg=(p.f==='med'&&p.hk!=null)?`<span class="reglist ${p.hk?'yes':'no'}">${p.hk?'✓ 在香港醫委會認可名單':'✕ 未見於香港醫委會認可名單（返港要考執業試）'}</span>`:'';
+  const gl=r.gaps.length?`<ul class="pgaps ${r.st==='min'?'toc':'miss'}">${r.st==='min'?'<li style="list-style:none;margin-left:-16px"><b>要有競爭力：</b></li>':''}${r.gaps.map(g=>`<li>${g}</li>`).join('')}</ul>`:'';
+  return `<article class="prog ${r.st}">
+    <div class="ptop"><div><div class="psch">${C[p.c].f} ${p.sch}</div><div class="pprog">${p.prog}</div></div><span class="badge ${r.st}">${STL[r.st]}</span></div>
+    <div class="pmeta"><span>${p.city}</span><span>${p.yrs} 年${p.info?'（總年期）':''}</span>${p.fee?`<span>${fmtFee(p)}</span>`:''}</div>
+    <p class="preq">${p.req||''}</p>${gl}
+    ${p.h.length?`<div class="hurd">${p.h.map(x=>`<span>${x}</span>`).join('')}</div>`:''}
+    <div class="pfoot"><a href="${p.link}" target="_blank" rel="noopener">官方網頁</a><span class="src ${srcCls(p.src)}">資料：${p.src}</span>${reg}</div>
+  </article>`;
+}
+const RANK={comp:0,min:1,gap:2,none:3,info:4};
+function renderFields(){
+  const box=document.getElementById('fields');const has=any();let html='';
+  FIELDS.forEach(f=>{
+    let ps=PROGS.filter(p=>p.f===f.k);
+    const counts=CORDER.map(c=>{const cps=ps.filter(p=>p.c===c&&!p.info);if(!cps.length&&!ps.some(p=>p.c===c)) return '';const ok=cps.filter(p=>['comp','min'].includes(evalP(p).st)).length;const comp=cps.filter(p=>evalP(p).st==='comp').length;
+      if(!cps.length) return `<span class="cc">${C[c].f} 路線資訊</span>`;
+      return has?`<span class="cc ${comp?'best':(ok?'lit':'')}">${C[c].f} ${ok}／${cps.length}</span>`:`<span class="cc">${C[c].f} ${cps.length}</span>`;}).join('');
+    if(S.cf!=='ALL') ps=ps.filter(p=>p.c===S.cf);
+    if(has&&S.sf!=='ALL'){ps=ps.filter(p=>{const s=evalP(p).st;return S.sf==='ok'?(s==='comp'||s==='min'):(S.sf==='comp'?s==='comp':s==='gap');});}
+    ps.sort((a,b)=>(RANK[evalP(a).st]-RANK[evalP(b).st])||(CORDER.indexOf(a.c)-CORDER.indexOf(b.c)));
+    const open=S.open.includes(f.k);
+    let body='';
+    if(!ps.length) body='<p class="empty">這個篩選下沒有課程。試試改地方或狀態。</p>';
+    else{CORDER.forEach(c=>{const cp=ps.filter(p=>p.c===c);if(cp.length) body+=`<div class="cgroup"><h4>${C[c].f} ${C[c].n}</h4>${cp.map(progCard).join('')}</div>`;});}
+    const hk=HKP[f.k];
+    html+=`<details class="field" data-k="${f.k}" ${open?'open':''}><summary><span class="fname">${f.n}</span><span class="chev"></span><span class="fdesc">${f.d}</span><span class="fcounts">${counts}</span></summary>
+      <div class="fbody"><div class="hknote"><b>返港執業：</b>香港讀：${hk[0]} 外國讀：${hk[1]}</div>${body}</div></details>`;
+  });
+  box.innerHTML=html;
+  box.querySelectorAll('details').forEach(d=>d.addEventListener('toggle',()=>{const k=d.dataset.k;S.open=S.open.filter(x=>x!==k);if(d.open) S.open.push(k);save();}));
+}
+
+// ---------- tab 2 table ----------
+function renderHKTable(){
+  document.getElementById('hktable').innerHTML=FIELDS.map(f=>`<tr><td><b>${f.n}</b></td><td>${HKP[f.k][0]}</td><td>${HKP[f.k][1]}</td></tr>`).join('');
+}
+
+// ---------- tab 3 costs ----------
+function liveCost(p){let [cur,amt]=LIVE[p.live]||['HKD',0];if(S.bro&&p.live==='TOR'){cur='CAD';amt=+S.broCost||0;}return amt*(cur==='HKD'?1:S.fx[cur]);}
+function feeHK(p){return p.fee*(p.cur==='HKD'?1:S.fx[p.cur]);}
+function totalHK(p){return p.yrs*(feeHK(p)+liveCost(p));}
+const wan=v=>`HK$${(v/10000).toFixed(v>=1e6?0:1)} 萬`;
+function renderCosts(){
+  const sel=document.getElementById('costField');
+  if(!sel.options.length){sel.innerHTML=FIELDS.map(f=>`<option value="${f.k}">${f.n}</option>`).join('');}
+  sel.value=S.costField;
+  const ps=PROGS.filter(p=>p.f===S.costField&&!p.info&&p.fee>0).map(p=>({p,t:totalHK(p)})).sort((a,b)=>a.t-b.t);
+  const max=Math.max(1,...ps.map(x=>x.t));
+  document.getElementById('costBars').innerHTML=ps.length?ps.map(({p,t})=>`<div class="bar"><div class="bl">${C[p.c].f} ${p.sch}<small>${p.prog}，${p.yrs} 年</small></div><div class="track"><div class="fill f-${p.c}" style="width:${Math.max(3,t/max*100)}%"></div><span class="val">${wan(t)}</span></div></div>`).join(''):'<p class="empty">這一科沒有可計算的課程（加拿大部分只有路線資訊）。</p>';
+  const avg=CORDER.map(c=>{const cp=ps.filter(x=>x.p.c===c);if(!cp.length) return null;const yr=cp.reduce((a,x)=>a+feeHK(x.p)+liveCost(x.p),0)/cp.length;return {c,yr,n:cp.length};}).filter(Boolean);
+  const m2=Math.max(1,...avg.map(a=>a.yr));
+  document.getElementById('avgBars').innerHTML=avg.map(a=>`<div class="bar"><div class="bl">${C[a.c].f} ${C[a.c].n}<small>${a.n} 個課程平均</small></div><div class="track"><div class="fill f-${a.c}" style="width:${Math.max(3,a.yr/m2*100)}%"></div><span class="val">${wan(a.yr)}／年</span></div></div>`).join('');
+}
+function bindCostInputs(){
+  ['GBP','CAD','AUD'].forEach(c=>{const el=document.getElementById('fx'+c);el.value=S.fx[c];el.addEventListener('input',()=>{S.fx[c]=parseFloat(el.value)||0;save();renderCosts();});});
+  const b=document.getElementById('bro');b.checked=S.bro;b.onchange=()=>{S.bro=b.checked;save();renderCosts();renderMatrix();};
+  const bc=document.getElementById('broCost');bc.value=S.broCost;bc.oninput=()=>{S.broCost=parseFloat(bc.value)||0;save();renderCosts();};
+  document.getElementById('costField').onchange=e=>{S.costField=e.target.value;save();renderCosts();};
+}
+
+// ---------- tab 3 matrix ----------
+const FAC=[['cost','總成本（越低越好）'],['hk','返港執業容易'],['entry','入學容易'],['years','讀得快'],['family','家人照應'],['abroad','海外發展機會']];
+const MX={
+ doc:{
+  HK:{s:{cost:5,hk:5,entry:1,years:3,family:5,abroad:2},why:'成本最低、返港直接註冊；但醫科、牙醫本地學額極少，DSE 要接近 5* 平均。'},
+  UK:{s:{cost:2,hk:3,entry:2,years:4,family:2,abroad:4},why:'大多數主流醫學院在香港認可名單，可走特別註冊；但國際生名額少、要考 UCAT，每年學費約 £33,000–70,000。'},
+  CA:{s:{cost:1,hk:2,entry:1,years:1,family:5,abroad:3},why:'安省醫學院實際上不收國際生，要先讀本科，總年期 8 年以上；唯一優勢是哥哥在 GTA。'},
+  AU:{s:{cost:1,hk:3,entry:3,years:4,family:2,abroad:4},why:'Monash、UNSW、Adelaide 等在認可名單，DSE 要求相對可行，但要 ISAT 或 UCAT ANZ 加面試，學費每年約 AUD 95,000–100,000。'}},
+ allied:{
+  HK:{s:{cost:5,hk:5,entry:3,years:3,family:5,abroad:2},why:'本地註冊最直接；SSSDP 資助自資學位令護理、職治、放射、化驗、物治多了選擇。'},
+  UK:{s:{cost:3,hk:3,entry:4,years:5,family:2,abroad:4},why:'3 年學位、DSE 要求較易達到；物治、職治返港逐個審批，護理要考執業試；IELTS 7.0，言語治療 8.0。'},
+  CA:{s:{cost:2,hk:2,entry:3,years:2,family:5,abroad:4},why:'護理可直入；物治、職治、言語要先讀本科再讀碩士，約 6 年；讀 GTA 學校可與哥哥同住。'},
+  AU:{s:{cost:2,hk:3,entry:4,years:4,family:2,abroad:4},why:'DSE 約 20–26 分已有不少選擇，4 年學位；學費及生活費較高。'}},
+ vet:{
+  HK:{s:{cost:5,hk:5,entry:1,years:3,family:5,abroad:3},why:'城大有英澳雙認證，但只有約 30 個本地學額，最佳五科要約 27–29（標準計分）。'},
+  UK:{s:{cost:2,hk:4,entry:3,years:4,family:2,abroad:4},why:'RVC 最低要求 555（生物、化學），亦有新的國際生預科；學費約 £50,000／年。'},
+  CA:{s:{cost:1,hk:3,entry:1,years:1,family:5,abroad:3},why:'OVC 只有約 15 個非加拿大人學額，要先讀大學，總共約 8 年。'},
+  AU:{s:{cost:2,hk:4,entry:4,years:3,family:2,abroad:4},why:'Adelaide 官方 DSE 21 分起，官方表示可在香港註冊；Murdoch 首年學費約 AUD 68,400。'}}
+};
+function renderWeights(){
+  const box=document.getElementById('weights');
+  box.innerHTML=FAC.map(([k,n])=>`<div><label for="w-${k}"><span>${n}</span><b id="wv-${k}">${S.w[k]}</b></label><input type="range" min="0" max="5" step="1" id="w-${k}" value="${S.w[k]}"></div>`).join('');
+  FAC.forEach(([k])=>{const el=document.getElementById('w-'+k);el.oninput=()=>{S.w[k]=+el.value;document.getElementById('wv-'+k).textContent=el.value;save();renderMatrix();};});
+  const g=document.getElementById('grp');g.value=S.grp;g.onchange=()=>{S.grp=g.value;save();renderMatrix();};
+}
+function renderMatrix(){
+  const m=MX[S.grp];const wsum=FAC.reduce((a,[k])=>a+S.w[k],0)||1;
+  const rows=CORDER.map(c=>{const sc=Object.assign({},m[c].s);if(c==='CA'&&!S.bro) sc.family=Math.min(sc.family,4);const tot=FAC.reduce((a,[k])=>a+sc[k]*S.w[k],0)/wsum;return {c,tot,sc,why:m[c].why};}).sort((a,b)=>b.tot-a.tot);
+  document.getElementById('results').innerHTML=rows.map((r,i)=>`<div class="resrow"><div class="top"><span class="nm">${i+1}. ${C[r.c].f} ${r.c==='HK'?'留港讀':C[r.c].n}</span><span class="sc">${r.tot.toFixed(1)}<small style="font-size:13px;color:var(--muted)">／5</small></span></div><div class="rtrack"><div class="rfill" style="width:${r.tot/5*100}%"></div></div><p class="why">${r.why}</p><div class="fgrid">${FAC.map(([k,n])=>`<span>${n.replace(/（.*）/,'')}：${r.sc[k]}</span>`).join('')}</div></div>`).join('');
+}
+
+// ---------- tabs ----------
+function bindTabs(){
+  const tabs=[...document.querySelectorAll('.tab')];
+  tabs.forEach(t=>t.addEventListener('click',()=>{tabs.forEach(x=>x.setAttribute('aria-selected',x===t));document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('on',p.id===t.getAttribute('aria-controls')));window.scrollTo({top:document.querySelector('.tabs').offsetTop,behavior:'auto'});}));
+}
+
+function renderAll(){renderScore();renderFilters();renderFields();updateMap();}
+drawMap();buildGrades();bindTabs();renderHKTable();bindCostInputs();renderWeights();renderAll();renderCosts();renderMatrix();
+})();
+</script>
+</body>
+</html>
